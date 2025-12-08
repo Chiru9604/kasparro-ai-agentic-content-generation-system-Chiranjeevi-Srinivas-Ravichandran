@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# IDE
+.idea/
+.vscode/
+
+# Project Output (optional, but good practice to ignore generated content)
+output/*.json
+!output/.gitignore
