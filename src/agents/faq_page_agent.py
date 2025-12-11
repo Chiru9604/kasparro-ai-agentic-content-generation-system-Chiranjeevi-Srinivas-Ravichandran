@@ -1,67 +1,55 @@
-﻿import json
+from ..config import get_settings
 from typing import List
 from ..models import Product, Question, FAQItem, FAQPage
-from ..llm_client import LLMClient
+from .base_llm_agent import BaseLLMAgent
+from ..prompts import get_faq_page_prompts
 
 
-class FAQPageAgent:
+class FAQPageAgent(BaseLLMAgent):
     """
     Agent 3:
     Builds an FAQ page from the product data and generated questions.
     """
 
-    def __init__(self, llm: LLMClient):
-        self.llm = llm
+    def run(
+        self,
+        product: Product,
+        questions: List[Question],
+        max_questions: int | None = None,
+    ) -> FAQPage:
+        env_limit = get_settings().faq_max_questions
+        question_limit = max(max_questions or env_limit, 15)
 
-    def run(self, product: Product, questions: List[Question]) -> FAQPage:
-        # Use first 10 questions (at least 5 are required)
-        selected = questions[:10]
+        if len(questions) < question_limit:
+            raise ValueError(
+                f"FAQPageAgent requires at least {question_limit} candidate questions, "
+                f"but only {len(questions)} were supplied."
+            )
 
-        system_prompt = """
-You are FAQPageAgent.
+        # Balanced selection strategy: Group by category and round-robin select
+        from collections import defaultdict
+        by_category = defaultdict(list)
+        for q in questions:
+            by_category[q.category].append(q)
+        
+        selected = []
+        categories = list(by_category.keys())
+        while len(selected) < question_limit and categories:
+            for cat in list(categories):
+                if by_category[cat]:
+                    selected.append(by_category[cat].pop(0))
+                    if len(selected) >= question_limit:
+                        break
+                else:
+                    categories.remove(cat)
+        
+        questions_payload = [q.model_dump() for q in selected]
 
-You create an FAQ page for a skincare product.
-Use ONLY the provided product data and questions.
-Do not invent new ingredients or medical/clinical claims.
+        system_prompt, user_prompt = get_faq_page_prompts(product, questions_payload)
 
-Return JSON with this shape:
-{
-  "title": string,
-  "intro": string,
-  "questions": [
-    { "question": string, "answer": string, "category": string }
-  ]
-}
-
-Rules:
-- Use AT LEAST 5 questions from the provided list.
-- Answers must rely ONLY on:
-  name, concentration, skin_type, key_ingredients, benefits, how_to_use, side_effects, price.
-- You can rephrase and clarify, but do not add new scientific claims.
-
-Output ONLY valid JSON.
-"""
-
-        questions_payload = [
-            {"question": q.question, "category": q.category} for q in selected
-        ]
-
-        user_prompt = f"""
-Product data:
-- Name: {product.name}
-- Concentration: {product.concentration}
-- Skin type: {product.skin_type}
-- Key ingredients: {product.key_ingredients}
-- Benefits: {product.benefits}
-- How to use: {product.how_to_use}
-- Side effects: {product.side_effects}
-- Price: {product.price}
-
-Candidate questions (JSON):
-{json.dumps(questions_payload, ensure_ascii=False, indent=2)}
-"""
-
-        data = self.llm.call_and_parse_json(system_prompt, user_prompt)
+        from ..schemas import FAQPageSchema
+        
+        data = self._j(system_prompt, user_prompt, schema=FAQPageSchema)
 
         faq_items: List[FAQItem] = []
         for q in data["questions"]:

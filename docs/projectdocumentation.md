@@ -1,4 +1,4 @@
-﻿# Project Documentation
+# Project Documentation
 
 ## 1. Problem Statement
 
@@ -42,13 +42,18 @@ The project follows a **multi-agent architecture** orchestrated by a central pip
 - `src/` – Core source code
   - `agents/` – Specialized agents for each step of the pipeline
   - `blocks/` – Reusable logic blocks for content structure
-  - `models.py` – Dataclasses for all entities (Product, FAQ, ProductPage, Comparison, etc.)
+  - `models.py` – Pydantic models for all entities (Product, FAQ, ProductPage, Comparison, etc.)
   - `llm_client.py` – Wrapper around Groq’s LLM API
-  - `orchestrator.py` – Main pipeline orchestration
+  - `orchestrator.py` – Main pipeline orchestration using LangChain Runnables
+  - `config.py` – Centralized configuration via Pydantic Settings
+  - `prompts.py` – Centralized prompt management
+  - `schemas.py` – JSON schemas for LLM validation
+- `tests/` – Unit and integration tests
 - `input/` – Input files (e.g., `product_input.json`)
 - `output/` – Generated JSON content (`faq.json`, `product_page.json`, `comparison_page.json`)
 - `docs/` – Project documentation
 - `main.py` – Entry point to run the full pipeline
+- `requirements.txt` – Pinned project dependencies
 
 ---
 
@@ -57,18 +62,16 @@ The project follows a **multi-agent architecture** orchestrated by a central pip
 ### 4.1 LLM Client (`src/llm_client.py`)
 
 - Wraps the **Groq** API client.
-- Uses model: `llama-3.3-70b-versatile` by default.
-- Exposes two methods:
-  - `call(system_prompt, user_prompt) -> str`
-  - `call_and_parse_json(system_prompt, user_prompt) -> Dict`
-- Enforces **JSON-only responses** (via `response_format` and strict prompting) so that each agent can reliably parse outputs.
-- Loads `GROQ_API_KEY` from environment using `python-dotenv` and a `.env` file.
+- Uses configurable model and temperature via `src/config.py`.
+- Exposes methods for chat completion and JSON parsing with error handling.
+- Enforces **JSON-only responses** (via `response_format` and strict prompting).
+- Uses `src/config.py` (Pydantic Settings) for robust configuration management.
 
 ---
 
 ### 4.2 Data Models (`src/models.py`)
 
-The main dataclasses are:
+The main Pydantic models are:
 
 - `Product` – normalized product entity with:
   - `id` (slug from product name)
@@ -84,11 +87,11 @@ The main dataclasses are:
 - `ProductPage` – product page structure:
   - `short_description`, `detailed_description`
   - `skin_type`, `key_ingredients`, `benefits`
-  - `how_to_use_block`, `safety_block`, `pricing_block`
+  - `how_to_use_block`, `safety_block`, `pricing_block` (Typed blocks)
 
 - `ComparisonDimension` / `ComparisonPage` – comparison page between Product A and synthetic Product B.
 
-These models are serialized to JSON via `json.dumps(..., default=lambda o: o.__dict__)`.
+These models are serialized to JSON via Pydantic's `model_dump()` method, ensuring type safety and correct formatting.
 
 ---
 

@@ -1,9 +1,7 @@
-﻿from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List
+from pydantic import BaseModel
 
-
-@dataclass
-class Product:
+class Product(BaseModel):
     id: str
     name: str
     concentration: str
@@ -14,32 +12,39 @@ class Product:
     side_effects: str
     price: str
 
-
-@dataclass
-class Question:
+class Question(BaseModel):
     """Generated user question with a category."""
     question: str
     category: str
 
-
-@dataclass
-class FAQItem:
+class FAQItem(BaseModel):
     """Question + answer for the final FAQ page."""
     question: str
     answer: str
     category: str
 
-
-@dataclass
-class FAQPage:
+class FAQPage(BaseModel):
     product_id: str
     title: str
     intro: str
     questions: List[FAQItem]
 
+class UsageBlock(BaseModel):
+    how_to_use: str
+    recommended_frequency: str
+    routine_tips: List[str]
 
-@dataclass
-class ProductPage:
+class SafetyBlock(BaseModel):
+    side_effects: str
+    patch_test_recommended: bool
+    not_for: List[str]
+
+class PricingBlock(BaseModel):
+    price: str
+    currency: str
+    price_segment: str
+
+class ProductPage(BaseModel):
     product_id: str
     name: str
     short_description: str
@@ -47,22 +52,22 @@ class ProductPage:
     skin_type: List[str]
     key_ingredients: List[str]
     benefits: List[str]
-    how_to_use_block: Dict[str, Any]
-    safety_block: Dict[str, Any]
-    pricing_block: Dict[str, Any]
+    how_to_use_block: UsageBlock
+    safety_block: SafetyBlock
+    pricing_block: PricingBlock
 
-
-@dataclass
-class ComparisonDimension:
+class ComparisonDimension(BaseModel):
     dimension: str
-    product_a: Any
-    product_b: Any
+    product_a: str
+    product_b: str
     summary: str
 
+class PriceComparisonResult(BaseModel):
+    product_a_price: str
+    product_b_price: str
+    summary: str
 
-@dataclass
-class ComparisonPage:
-    product_a: Dict[str, Any]
-    product_b: Dict[str, Any]
+class ComparisonPage(BaseModel):
+    product_a: Product
+    product_b: Product
     comparison_dimensions: List[ComparisonDimension]
-

@@ -13,7 +13,7 @@ The system was built with the following core principles:
     *   **Benefit**: Modular code, easier debugging, and the ability to upgrade specific agents without breaking the entire pipeline.
 
 2.  **Structured Data First**:
-    *   **Reasoning**: LLMs can be unpredictable. By enforcing strict JSON input/output schemas and using Python `dataclasses`, we ensure type safety and data integrity throughout the pipeline.
+    *   **Reasoning**: LLMs can be unpredictable. By enforcing strict JSON input/output schemas and using **Pydantic models**, we ensure type safety and data integrity throughout the pipeline.
     *   **Benefit**: The output is machine-readable and ready for direct integration into frontend applications or databases.
 
 3.  **High-Performance Inference (Groq)**:
@@ -41,8 +41,10 @@ graph TD
 
 ### Key Components
 
-*   **Orchestrator (`src/orchestrator.py`)**: The central nervous system that manages the flow of data between agents. It ensures dependencies are met (e.g., Questions are generated before the FAQ Page).
-*   **LLM Client (`src/llm_client.py`)**: A robust wrapper around the Groq API that handles connection details and enforces JSON mode for reliable outputs.
+*   **Orchestrator (`src/orchestrator.py`)**: The central nervous system that manages the flow of data between agents using **LangChain Runnable pipelines**. It ensures dependencies are met (e.g., Questions are generated before the FAQ Page).
+*   **LLM Client (`src/llm_client.py`)**: A robust wrapper around the Groq API that handles connection details, retry logic, and enforces JSON mode for reliable outputs.
+*   **Configuration (`src/config.py`)**: Centralized configuration management using Pydantic Settings (`BaseSettings`), removing scattered environment variable calls.
+*   **Prompts (`src/prompts.py`)**: Centralized repository for all agent system and user prompts.
 *   **Agents (`src/agents/`)**:
     *   `ProductParserAgent`: Normalizes raw input data.
     *   `QuestionGeneratorAgent`: Simulates user curiosity to generate relevant questions.
@@ -73,13 +75,26 @@ graph TD
     Create a `.env` file in the root directory:
     ```env
     GROQ_API_KEY=gsk_...your_key_here...
+    # Optional Configuration
+    # MODEL_NAME=llama-3.3-70b-versatile
+    # MODEL_TEMPERATURE=0.4
+    # INPUT_PATH=input/product_input.json
     ```
+
+### Running Tests
+The project includes a comprehensive test suite using `pytest`.
+
+```bash
+pytest tests/
+```
 
 ### Running the Pipeline
 
 1.  **Prepare Input**: Ensure `input/product_input.json` contains valid product data.
 2.  **Execute**:
     ```bash
+    python -m src.orchestrator
+    # OR
     python main.py
     ```
 3.  **View Results**: Generated JSON files will appear in the `output/` directory.
@@ -91,11 +106,15 @@ graph TD
 ├── output/                 # Generated results
 ├── src/
 │   ├── agents/             # Task-specific LLM agents
-│   ├── blocks/             # UI/Content block definitions
+│   ├── blocks/             # Reusable logic blocks
+│   ├── config.py           # Configuration management
 │   ├── llm_client.py       # Groq API wrapper
-│   ├── models.py           # Pydantic/Data classes
-│   └── orchestrator.py     # Pipeline logic
+│   ├── models.py           # Pydantic models
+│   ├── orchestrator.py     # Pipeline logic
+│   ├── prompts.py          # Centralized prompts
+│   └── schemas.py          # JSON validation schemas
+├── tests/                  # Unit and integration tests
 ├── docs/                   # Detailed documentation
 ├── main.py                 # Entry point
-└── requirements.txt        # Dependencies
+└── requirements.txt        # Pinned dependencies
 ```
