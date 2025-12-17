@@ -17,7 +17,7 @@ class QuestionSchema(BaseModel):
 
 
 class QuestionListSchema(BaseModel):
-    questions: List[QuestionSchema] = Field(..., min_items=15)
+    questions: List[QuestionSchema] = Field(..., min_length=15)
 
 
 class ComparisonDimensionSchema(BaseModel):
@@ -28,7 +28,7 @@ class ComparisonDimensionSchema(BaseModel):
 
 
 class ComparisonPageSchema(BaseModel):
-    comparison_dimensions: List[ComparisonDimensionSchema] = Field(..., min_items=4)
+    comparison_dimensions: List[ComparisonDimensionSchema] = Field(..., min_length=4)
 
 
 class ProductPageSchema(BaseModel):
@@ -39,4 +39,12 @@ class ProductPageSchema(BaseModel):
 class FAQPageSchema(BaseModel):
     title: str
     intro: str
-    questions: List[FAQItemSchema] = Field(..., min_items=15)
+    questions: List[FAQItemSchema] = Field(..., min_length=15)
+
+
+class FeedbackReportSchema(BaseModel):
+    overall_score: int = Field(..., description="Score from 1-10")
+    coherence_score: int = Field(..., description="Score from 1-10 on flow and tone")
+    accuracy_score: int = Field(..., description="Score from 1-10 on factual consistency with input")
+    issues: List[str] = Field(..., description="List of specific inconsistencies or quality issues found")
+    summary: str = Field(..., description="Executive summary of the content quality")

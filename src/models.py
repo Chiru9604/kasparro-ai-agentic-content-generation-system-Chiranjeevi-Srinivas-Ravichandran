@@ -71,3 +71,12 @@ class ComparisonPage(BaseModel):
     product_a: Product
     product_b: Product
     comparison_dimensions: List[ComparisonDimension]
+
+
+class FeedbackReport(BaseModel):
+    """Quality assurance report for the generated content."""
+    overall_score: int
+    coherence_score: int
+    accuracy_score: int
+    issues: List[str]
+    summary: str

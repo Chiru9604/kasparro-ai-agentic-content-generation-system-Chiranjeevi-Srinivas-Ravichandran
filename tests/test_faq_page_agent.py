@@ -104,11 +104,12 @@ def test_faq_page_agent_balanced_selection():
     json_str = prompt[json_start:]
     selected_questions = json.loads(json_str)
     
-    assert len(selected_questions) == 15
+    assert len(selected_questions) == 20
     
+    # Since we pass ALL questions to the LLM, we expect the count to match the input
     usage_count = sum(1 for q in selected_questions if q["category"] == "Usage")
     benefits_count = sum(1 for q in selected_questions if q["category"] == "Benefits")
     
     assert usage_count == 5
-    assert benefits_count == 10
+    assert benefits_count == 15
 

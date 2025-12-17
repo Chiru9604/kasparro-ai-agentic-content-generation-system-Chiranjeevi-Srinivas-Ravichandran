@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, List
 from pydantic import BaseModel
-from .models import Product, UsageBlock, SafetyBlock, PricingBlock, Question
+from .models import Product, UsageBlock, SafetyBlock, PricingBlock, Question, FAQPage, ProductPage, ComparisonPage
 
 def _to_json(obj: Any) -> str:
     if isinstance(obj, BaseModel):
@@ -145,6 +145,22 @@ Pricing block:
 
 # --- Comparison ---
 
+COMPETITOR_GEN_SYSTEM = """
+You are a Product Strategist.
+Create a REALISTIC competitor product profile (Product B) based on the input Product A.
+Product B should be similar but slightly different to allow for interesting comparison.
+For example, if Product A is expensive, make Product B cheaper but with lower concentration.
+Return a valid Product JSON object.
+"""
+
+def get_competitor_gen_prompts(product_a: Product) -> tuple[str, str]:
+    user_prompt = f"""
+    Create a competitor for this product:
+    {_to_json(product_a)}
+    """
+    return COMPETITOR_GEN_SYSTEM, user_prompt
+
+
 COMPARISON_SYSTEM = """
 You are ComparisonAgent.
 
@@ -168,6 +184,7 @@ Use these dimensions:
 - "benefits"
 - "skin_type"
 - "usage"
+- "price"
 
 For each dimension:
 - product_a field: relevant data from Product A
@@ -188,3 +205,51 @@ Product B (JSON):
 {_to_json(product_b)}
 """
     return COMPARISON_SYSTEM, user_prompt
+
+
+# --- Feedback / Quality Audit ---
+
+FEEDBACK_SYSTEM = """
+You are the Quality Assurance Editor (FeedbackAgent).
+
+Your goal is to audit the generated content for quality, consistency, and safety.
+Compare the generated outputs (FAQ, Product Page, Comparison) against the SOURCE Product Data.
+
+Return JSON:
+{
+  "overall_score": int,    // 1-10
+  "coherence_score": int,  // 1-10 (flow, tone, professionalism)
+  "accuracy_score": int,   // 1-10 (adherence to source data)
+  "issues": [string],      // List of specific hallucinations or errors found
+  "summary": string        // 1 paragraph executive summary
+}
+
+Rules:
+1. HALLUCINATION CHECK: If the output mentions ingredients or benefits NOT in the source, flag it as a major issue.
+2. PRICE CHECK: Ensure prices mentioned in outputs match the source.
+3. TONE CHECK: Content should be professional, helpful, and compliant (no "cure" claims).
+4. Be strict but fair.
+
+Output ONLY valid JSON.
+"""
+
+def get_feedback_prompts(
+    product: Product,
+    faq_page: FAQPage,
+    product_page: ProductPage,
+    comparison_page: ComparisonPage
+) -> tuple[str, str]:
+    user_prompt = f"""
+SOURCE DATA (Truth):
+{_to_json(product)}
+
+GENERATED FAQ PAGE:
+{_to_json(faq_page)}
+
+GENERATED PRODUCT PAGE:
+{_to_json(product_page)}
+
+GENERATED COMPARISON PAGE:
+{_to_json(comparison_page)}
+"""
+    return FEEDBACK_SYSTEM, user_prompt

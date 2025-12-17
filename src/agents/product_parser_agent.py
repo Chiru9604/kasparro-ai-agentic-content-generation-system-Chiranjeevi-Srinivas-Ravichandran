@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from pathlib import Path
 from ..models import Product
@@ -17,6 +17,9 @@ class ProductParserAgent:
         return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
     def run(self) -> Product:
+        if not self.input_path.exists():
+            raise FileNotFoundError(f"Input file not found at: {self.input_path}")
+        
         raw = json.loads(self.input_path.read_text(encoding="utf-8-sig"))
         product_id = self._slugify(raw["product_name"])
 

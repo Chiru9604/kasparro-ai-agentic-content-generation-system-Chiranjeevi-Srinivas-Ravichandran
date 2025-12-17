@@ -41,6 +41,7 @@ The project follows a **multi-agent architecture** orchestrated by a central pip
 
 - `src/` – Core source code
   - `agents/` – Specialized agents for each step of the pipeline
+    - `base_llm_agent.py` – Base class for all LLM-powered agents
   - `blocks/` – Reusable logic blocks for content structure
   - `models.py` – Pydantic models for all entities (Product, FAQ, ProductPage, Comparison, etc.)
   - `llm_client.py` – Wrapper around Groq’s LLM API

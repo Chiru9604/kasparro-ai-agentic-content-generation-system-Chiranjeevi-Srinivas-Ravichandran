@@ -1,11 +1,7 @@
 from typing import List
 from ..models import Product, ComparisonDimension, ComparisonPage
-from ..blocks.comparison_blocks import (
-    generate_product_b_from_product_a,
-    compare_price,
-)
 from .base_llm_agent import BaseLLMAgent
-from ..prompts import get_comparison_prompts
+from ..prompts import get_comparison_prompts, get_competitor_gen_prompts
 
 
 class ComparisonAgent(BaseLLMAgent):
@@ -15,8 +11,11 @@ class ComparisonAgent(BaseLLMAgent):
     """
 
     def run(self, product_a: Product) -> ComparisonPage:
-        product_b = generate_product_b_from_product_a(product_a)
+        # Step 1: Generate Competitor (Product B) via LLM
+        sys_b, user_b = get_competitor_gen_prompts(product_a)
+        product_b = self._j(sys_b, user_b, schema=Product)
 
+        # Step 2: Compare A vs B
         system_prompt, user_prompt = get_comparison_prompts(product_a, product_b)
 
         from ..schemas import ComparisonPageSchema
@@ -33,17 +32,6 @@ class ComparisonAgent(BaseLLMAgent):
                     summary=item["summary"],
                 )
             )
-
-        # Add price comparison dimension from pure Python logic
-        price_data = compare_price(product_a, product_b)
-        dims.append(
-            ComparisonDimension(
-                dimension="price",
-                product_a=price_data.product_a_price,
-                product_b=price_data.product_b_price,
-                summary=price_data.summary,
-            )
-        )
 
         return ComparisonPage(
             product_a=product_a,
