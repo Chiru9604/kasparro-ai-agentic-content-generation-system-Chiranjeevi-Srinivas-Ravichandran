@@ -88,6 +88,12 @@ The project includes a comprehensive test suite using `pytest`.
 pytest tests/
 ```
 
+To run the **real integration test** against the live Groq API (verifying actual prompts and connectivity):
+
+```bash
+pytest tests/test_integration_real.py
+```
+
 ### Running the Pipeline
 
 1.  **Prepare Input**: Ensure `input/product_input.json` contains valid product data.
